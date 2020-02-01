@@ -3,6 +3,7 @@ from networkx import dfs_preorder_nodes, topological_sort, line_graph
 from closures import save_and_draw_graph
 import os
 import glob
+import re
 
 
 class Counter:
@@ -103,6 +104,15 @@ class tcolor:
    UNDERLINE = '\033[4m'
    END = '\033[0m'
 
+def rearrange_labels(text,new_numbers):
+    result = re.split(r'[();,\s]\s*', text)# "setpgid,x,y,"
+    result.remove('')
+    try:
+        label = result[0]+"(" +str(new_numbers[int(result[1])])+","+str(new_numbers[int(result[2])])+")"
+    except KeyError as e:
+        label = result[0] + "(" + "0" + "," + "0" + ")"
+    return label
+
 
 def rearrange_indexes(G, shift=1, full_tree=True):
     old_index = list()
@@ -114,13 +124,15 @@ def rearrange_indexes(G, shift=1, full_tree=True):
             idx += 1
             old_index.append(G.nodes[v]['pid'])
             new_index[G.nodes[v]['pid']] = idx + shift
-    print(new_index, old_index)
+
     if full_tree:
         new_index[1] = 1
 
     #for idx, (u, v, k) in enumerate(top_order_list):
-    for v in dfs_preorder_nodes(G):
+    for u, v, k in top_order_list:
         #print(v, ": work on ", G.nodes[v])
+        if k == "follow":
+            continue
         for key in ['pid', 'ppid', 'sid', 'pgid']:
             try:
                 G.nodes[v][key] = new_index[G.nodes[v][key]]
@@ -128,6 +140,12 @@ def rearrange_indexes(G, shift=1, full_tree=True):
             except KeyError:
                 pass
                 print("\t\t\tlog", key, G.nodes[v])
+        if k.startswith("setpgid"):
+            #from networkx.classes.coreviews import AtlasView, AdjacencyView
+            #ed=G[u][v][k]
+        #@relatively_slow!
+            G.remove_edge(u, v, k)
+            G.add_edge(u, v, rearrange_labels(k,new_index))
         #print(v, ": res on " , G.nodes[v])
 
     return G

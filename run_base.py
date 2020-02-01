@@ -63,7 +63,7 @@ def pipeline(T, ctx=Context(), A=[],K=[],L=[], CR=dict(), save=False, perform_ac
     G = post_corr(G, ctx=ctx, cnt=cnt)
     if rearrange == 1:
         print("R", rearrange)
-        G = rearrange_indexes(G, 2, full_tree=True) # 1==init, then 2
+        G = rearrange_indexes(G, 1, full_tree=True) # 1==init, then 2
     if save:
         save_and_draw_graph(G, save_png=save, num_palette=ctx.colors_dict, pic_name=png_name+"_final.png", show_graph=False)
     if perform_actions:
@@ -78,7 +78,10 @@ def run_pipeline(source_tree, save=False, perform=False, show=True, rearrange=Fa
     elif not source_tree:
         T = test_trees.test5()
     else:
-        pass # load_tree_from_file
+        pass  # load_tree_from_file
+        print("TODO loading from file...")
+        return None
+
     G = pipeline(T, ctx=Context(), save=save, perform_actions=perform, rearrange=rearrange, color_scheme=colors)
     if show:
         save_and_draw_graph(G, num_palette=colors)
@@ -89,8 +92,8 @@ if __name__ == "__main__":
     A = K = L = []
     parser = create_parser()
     sys.argv.append("rstr") #-- delete this on release
-    sys.argv.append("-p")
-    sys.argv.append("1")
+    #sys.argv.append("-p")
+    #sys.argv.append("1")
     sys.argv.append("-R")
     sys.argv.append("1")
     parse_ns = parser.parse_args(sys.argv[1:])
