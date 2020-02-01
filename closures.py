@@ -34,97 +34,6 @@ def prepare_colors_from_range(r=7000): # not accurate but universal method
     return num_palette
 
 
-
-def _save_and_draw_graph(G, nm="____ddd____.dot", num_palette=list(), extended=False, ppid=True, save_png=True, pic_name="pic.png", show_graph=True, visualize_by_colors=True):
-    agr = nx.nx_agraph.to_agraph(G)
-    nx.draw(G, with_labels=True, node_size=1500, node_color="skyblue", node_shape="s", alpha=0.5, linewidths=40)
-    plt.show()
-    import sys
-    sys.exit(0)
-    agr.node_attr['style'] = 'filled'
-    agr.node_attr['shape'] = 'box'
-    agr.node_attr['gradientangle'] = 45
-    agr.graph_attr['dpi'] = 300
-
-    for node in agr.nodes():
-        n = agr.get_node(node)
-        n.attr['fillcolor'] = 'blue:cyan'
-        #n.attr['color'] = 'green;0.5:yellow'
-        #print(n.attr['pid'])
-        #print(node.obj_dict['attributes'].get('pid', None))
-        '''
-        if visualize_by_colors:
-            try:
-                clr_p, _ = num_palette[int(node.obj_dict['attributes'].get('pgid', 1))]
-                _, clr_s = num_palette[int(node.obj_dict['attributes'].get('sid', 1))]
-                node.set_color(clr_s)
-                node.set_fillcolor(clr_p)
-                node.set_style('bold, filled')
-                #node.set_fontcolor(colors[random.randrange(len(colors))])
-                #node.set_fillcolor(colors[random.randrange(len(colors))])
-                #node.set_style(styles[random.randrange(len(styles))])
-                #node.set_color(colors[random.randrange(len(colors))]
-            except Exception as e:
-                print(e)
-                node.set_color('black')
-            node.set_style('bold, filled, rounded, wedged')
-            #node.set_shape('') #diamond, record
-
-
-        else:
-            node.set_style('rounded, filled')
-        '''
-        if extended:
-            n.attr['label'] = \
-            n.attr.get('pid', None) + ' ' +\
-                       n.attr.get('pgid', None) + ' ' +\
-            n.attr.get('sid', None) + ' // ' + n.attr.get('ppid', None) + ' \n' +str(node)
-
-        else:
-            n.attr['label'] =\
-                n.attr.get('pid', None) + ' '  +\
-                n.attr.get('pgid', None) + ' ' +\
-                n.attr.get('sid', None) + ' '  + n.attr.get('ppid', None)
-
-
-    agr.draw('karate.png', prog='dot')
-    import sys
-    sys.exit(0)
-
-    pdot = to_pydot(karate_agr)
-
-
-    G.node_attr['shape'] = 'circle'
-    for i, node in enumerate(pdot.get_nodes()):
-        pass
-
-    for i, edge in enumerate(pdot.get_edges()):
-        ek = edge.obj_dict['attributes'].get('key', 'common')
-        edge.set_label(ek)
-        edge.set_style('bold')
-        if ek.startswith('fol'):
-            edge.set_color('orange')
-        if ek.endswith(')'):
-            edge.set_color('darkviolet')
-        elif ek == 'H':
-            edge.set_color('lightred')
-            edge.set_style('dot')
-        elif ek == 'h':
-            edge.set_color('lightgrey')
-        else:
-            edge.set_color('green') #"0.11 0.901 0.99")#'green')
-
-    pdot.write_dot(nm)
-    if save_png:
-        pdot.write_png(pic_name)
-    s = Source.from_file(nm, )
-    if show_graph:
-        s.render(view=True)
-        #s.attr(bgcolor='purple:pink', label='agraph', fontcolor='white')
-
-
-    return G
-
 def save_and_draw_graph(G, nm="____ddd____.dot", num_palette=dict(), extended=False, ppid=True, save_png=True, pic_name="pic.png", show_graph=True, visualize_by_colors=True):
     pdot = to_pydot(G)
     #num_palette = dict()
@@ -305,7 +214,6 @@ class ps_tree:
 class reconstructor:
     class attr_type:
         def __init__(self, name='pgid', cl_attr='sid', level=2, atype='SI'):
-
             self.name = name
             self.cl_attr = cl_attr
             self.level = level
@@ -363,19 +271,19 @@ class reconstructor:
                 cand_holder_cl = self.search_attr_holder_cl_creator(G, attr, node,ts)
                 if len(cand) > 0:
                     candidate_node = cand[0]
-                    G.add_edge(node, candidate_node, 'parent')
+                    #G.add_edge(node, candidate_node, 'parent')
                     G.nodes[node]['ppid'] = candidate_node
                     continue
                 elif len(cand_cl) > 0:
                     candidate_node = cand_cl[0]
-                    G.add_edge(node, candidate_node, 'parent')
+                    #G.add_edge(node, candidate_node, 'parent')
                     G.nodes[node]['ppid'] = candidate_node
                     continue
                 elif len(cand_holder_cl) > 0:
                     # it seems probably strange! maybe incorrect process tree!!! Check it!
                     # разве что это "early-clustering"
                     candidate_node = cand_cl[0]
-                    G.add_edge(node, candidate_node, 'parent')
+                    #G.add_edge(node, candidate_node, 'parent')
                     G.nodes[node]['ppid'] = G.nodes[candidate_node]['ppid']
                     # add 3 .. --> 3 3 3
                     node_new = cnt.inc()
@@ -403,14 +311,14 @@ class reconstructor:
                          'sid': G.nodes[node][attr.cl_attr],
                          'pgid': G.nodes[node][attr.cl_attr]})
                     G.add_edge(node_new_2, node_new, "pred")
-                    G.add_edge(node_new_2,G.nodes[b]['pid'],"parent")
-                    G.add_edge(candidate_node, node_new_2, "parent")
-                    G.add_edge(node, node_new_2, "parent")
+                    #G.add_edge(node_new_2,G.nodes[b]['pid'],"parent")
+                    #G.add_edge(candidate_node, node_new_2, "parent")
+                    #G.add_edge(node, node_new_2, "parent")
                     G.nodes[node].update({'ppid':G.nodes[node][attr.cl_attr]})
 
                     continue
-            if G.has_edge(G.nodes[node]['ppid'], node):
-                G.add_edge(node, G.nodes[node]['ppid'], 'parent')
+            #if G.has_edge(G.nodes[node]['ppid'], node):
+            #    G.add_edge(node, G.nodes[node]['ppid'], 'parent')
         return
 
 
@@ -534,12 +442,28 @@ class reconstructor:
                         return ([], 'none')
 
 
-if __name__ == '__main__':
+def get_pstree(trim_kernel=True):
     #p = ps_tree()
     #G = p.get_nx_tree()
     #save_and_draw_graph(G)
     p =ps_tree()
     r = reconstructor(p.get_tree())
-    res = r.run()
-    save_and_draw_graph(res)
+    T = r.RGraph
+    if trim_kernel:
+        if T.has_edge(0, 1):
+            T.remove_edge(0, 1)
+            _c_list = [c for c in sorted(nx.weakly_connected_components(r.RGraph), key=len, reverse=True)]
+            for idx, c in enumerate(_c_list):
+                if 0 in c:
+                    _c_list.pop(idx)
+                    T.remove_nodes_from([n for n  in c])
+                    break
+            print(_c_list)
+
+    return r.RGraph
+
+
+if __name__ == '__main__':
+    save_and_draw_graph(get_pstree())
+
 

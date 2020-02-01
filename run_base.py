@@ -1,7 +1,7 @@
 import sys
 import argparse
 from proc_base import *
-from closures import save_and_draw_graph, prepare_colors_from_range
+from closures import save_and_draw_graph, prepare_colors_from_range, get_pstree
 import test_trees
 from preprocess import preprocess_tree
 from gcorr import post_corr
@@ -73,10 +73,12 @@ def pipeline(T, ctx=Context(), A=[],K=[],L=[], CR=dict(), save=False, perform_ac
 
 def run_pipeline(source_tree, save=False, perform=False, show=True, rearrange=False):
     colors = prepare_colors_from_range()
-    if not source_tree:
+    if source_tree == 'runtime':
+        T = get_pstree()
+    elif not source_tree:
         T = test_trees.test5()
     else:
-        pass # get_tree(source_tree)
+        pass # load_tree_from_file
     G = pipeline(T, ctx=Context(), save=save, perform_actions=perform, rearrange=rearrange, color_scheme=colors)
     if show:
         save_and_draw_graph(G, num_palette=colors)
@@ -98,6 +100,4 @@ if __name__ == "__main__":
         pass
     else:#if parse_ns.command == "rstr":
         G = run_pipeline(parse_ns.tree, parse_ns.save, parse_ns.perform, parse_ns.show, int(parse_ns.rearrange))
-
-    #G = pipeline(test_trees.test5(),save=False)
 
