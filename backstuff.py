@@ -1,5 +1,4 @@
 from time import time
-from networkx import dfs_preorder_nodes, topological_sort, line_graph, bfs_edges, lexicographical_topological_sort
 import networkx as nx
 from closures import save_and_draw_graph
 import os
