@@ -76,7 +76,7 @@ def run_pipeline(source_tree, save=False, perform=False, show=True, rearrange=Fa
     if source_tree == 'runtime':
         T = get_pstree()
     elif not source_tree:
-        T = test_trees.test5()
+        T = test_trees.test4()
     else:
         pass  # load_tree_from_file
         print("TODO loading from file...")
@@ -92,8 +92,8 @@ if __name__ == "__main__":
     A = K = L = []
     parser = create_parser()
     sys.argv.append("rstr") #-- delete this on release
-    #sys.argv.append("-p")
-    #sys.argv.append("1")
+    sys.argv.append("-p")
+    sys.argv.append("1")
     sys.argv.append("-R")
     sys.argv.append("1")
     parse_ns = parser.parse_args(sys.argv[1:])

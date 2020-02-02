@@ -3,10 +3,10 @@
 ''' Default config is hardcoded in current version '''
 import paramiko
 import networkx as nx
-from backstuff import Netconfig, tcolor
+from backstuff import Netconfig, tcolor, prior_topological_sort, get_inferring_syscalls
 
 def extract_cmd_list(G):
-    top_order_list = list(nx.topological_sort(nx.line_graph(G)))
+    top_order_list = list(get_inferring_syscalls(G, prior_topological_sort(G)))
     for (u,v,k) in top_order_list:
         if k == 'follow':
             continue
@@ -145,7 +145,7 @@ def test(bin_name, run_mode='remote', config=Netconfig(host='192.168.1.100', por
 def perform(G, bin_name, run_mode='remote', config=Netconfig(host='192.168.1.100', port='22', user='root', password='osboxes.org', prog_prefix='/media/sf_Downloads/ptree_dumper/')):
     od = [(G.nodes[x]['pid'],z) for (x,y,z) in list(extract_cmd_list(G))]
     listc = compose_src_cpp(od)
-    print("Operations list:")
+    print("Operations to perform:")
     print(listc)
     with open('native_code/code.c', 'w') as f:
         for item in listc:
