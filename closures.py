@@ -14,10 +14,11 @@ from networkx.algorithms.traversal.depth_first_search import dfs_tree
 import matplotlib.pyplot as plt
 
 
-def pick_rand_color(l=170, h=255,shift=50):
-    r = lambda: random.randint(l, h)
+def pick_rand_color(l=170, h=255,shift=50, step=10):
+    r = lambda: random.randrange(l, h, step)
     (R,G,B) = (r(), r(), r())
     return ('#%02X%02X%02X' % (R,G,B),'#%02X%02X%02X' % (R-shift,G-shift,B-shift)) # pgroup color is lighter than session
+
 
 def prepare_colors_dict(G, attributes=['pid', 'pgid', 'sid', 'ppid']):
     num_palette = dict()
