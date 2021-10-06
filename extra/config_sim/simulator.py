@@ -1,10 +1,12 @@
 class SysContext:
-    def __init__(self, processes=[], groups=[], sessions=[], init_pid=1):
+    def __init__(self, processes=[], groups=[], sessions=[], init_pid=1, syslog=[], logging=True):
         self.processes = processes
         self.groups = groups
         self.sessions = sessions
         self.last_pid = 1
         self.init_pid = init_pid
+        self.syslog = syslog
+        self.logging = logging
 
     def system_start(self):
         init = Process()
@@ -42,14 +44,35 @@ class SysAPI:
 
     def fork(self):
         retcode = self.context.sys_fork(self.self_proc)
+        if (self.context.logging):
+            self.util_commit_log(str(self.self_proc.p)+" : fork() : "+"retcode = "+str(retcode))
         return retcode
 
     def exit(self, exit_code=0):
         retcode = self.context.sys_exit(self.self_proc)
+        if (self.context.logging):
+            self.util_commit_log(str(self.self_proc.p)+" : exit("+str(exit_code)+") : "+"retcode = "+str(retcode))
         return retcode
 
     def context_switch(self, sp):
         self.self_proc = sp
+
+    def util_enable_log(self):
+        self.context.logging = True
+
+    def util_disable_log(self):
+        self.context.logging = False
+
+    def util_dump_log(self):
+        print("System event log:\n# :PID:\tEvent")
+        for i, s in enumerate(self.context.syslog):
+            print(i,":", s)
+
+    def util_clean_log(self):
+        self.context.syslog=list()
+
+    def util_commit_log(self, event):
+        self.context.syslog.append(event)
 
     def util_ps(self):
         print("PID\tPGID\tSID\tPPID\n------------------------------")
@@ -78,3 +101,4 @@ if __name__ == '__main__':
     API.util_ps()
     API.exit()
     API.util_ps()
+    API.util_dump_log()
