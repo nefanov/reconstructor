@@ -34,13 +34,65 @@ class SysContext:
                 proc.pp = self.init_pid
 
     def sys_setsid(self, caller_proc):
-        if (caller_proc.p != caller_proc.g and caller_proc.p != caller_proc.s):
+        if (caller_proc.p != caller_proc.s):
             caller_proc.g = caller_proc.s = caller_proc.p
             return 0
         else:
             return -1
-    
+
+
+    def sys_setpgid(self, caller_proc, pid, pgid):
+        """
+        Kerrisk's Linux API Book:
+        setpgid() sets the PGID of the process specified by pid to pgid.
         
+        If pid is zero, then the process ID of the calling process is
+        used.  
+        
+        If pgid is zero, then the PGID of the process specified by
+        pid is made the same as its process ID.  
+        
+        If setpgid() is used to move a process from one process group to another (as is done by
+        some shells when creating pipelines), both process groups must be
+        part of the same session (see setsid(2) and credentials(7)).  In
+        this case, the pgid specifies an existing process group to be
+        joined and the session ID of that group must match the session ID
+        of the joining process.
+        """
+        if (pid==0):
+            pid = caller_proc.p
+            
+        if (pgid==0):
+            pgid = pid
+
+        if pid == caller_proc.p and pgid == pid:
+            if  caller_proc.p != caller_proc.s:
+                caller_proc.g = caller_proc.p
+                return 0
+            else:
+                return -1
+ 
+        proc = [item for item in self.processes if item.p == pid][0]
+        if len(proc) == 0:
+            # no such process
+            return -1
+
+        if proc.s == proc.p == proc.g:
+            # process is a session leader (check it on the new linux kernels--may be redundant?)
+            return -1
+
+        pgroup = [item for item in self.processes if item.g == pgid]
+        if len(pgroup) == 0:
+            # no such pgroup
+            return -1
+        
+        if pgroup[0].s != proc.s:
+            # they lay in different sessions
+            return -1
+
+        proc.g = pgid
+        return 0
+
 
 class SysAPI:
     def __init__(self, sc=SysContext(), fromstart=True):
@@ -62,10 +114,16 @@ class SysAPI:
             self.util_commit_log(str(self.self_proc.p)+" : exit("+str(exit_code)+") : "+"retcode = "+str(retcode))
         return retcode
 
-    def setsid(self, exit_code=0):
+    def setsid(self):
         retcode = self.context.sys_setsid(self.self_proc)
         if (self.context.logging):
             self.util_commit_log(str(self.self_proc.p)+" : setsid() : " +"retcode = "+str(retcode))
+        return retcode
+
+    def setpgid(self, pid=0, pgid=0):
+        retcode = self.context.sys_setpgid(self.self_proc, pid, pgid)
+        if (self.context.logging):
+            self.util_commit_log(str(self.self_proc.p)+" : setpgid("+str(pid)+", "+str(pgid)+") : " +"retcode = "+str(retcode))
         return retcode
 
     def context_switch(self, sp):
@@ -112,6 +170,8 @@ if __name__ == '__main__':
     API.fork()
     API.context_switch(API.context.processes[1])
     API.fork()
+    API.util_ps()
+    API.setpgid(0,2)
     API.util_ps()
     API.setsid()
     API.util_ps()
