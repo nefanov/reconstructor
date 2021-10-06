@@ -32,6 +32,14 @@ class SysContext:
         for proc in self.processes:
             if proc.pp == caller_proc.p:
                 proc.pp = self.init_pid
+
+    def sys_setsid(self, caller_proc):
+        if (caller_proc.p != caller_proc.g and caller_proc.p != caller_proc.s):
+            caller_proc.g = caller_proc.s = caller_proc.p
+            return 0
+        else:
+            return -1
+    
         
 
 class SysAPI:
@@ -52,6 +60,12 @@ class SysAPI:
         retcode = self.context.sys_exit(self.self_proc)
         if (self.context.logging):
             self.util_commit_log(str(self.self_proc.p)+" : exit("+str(exit_code)+") : "+"retcode = "+str(retcode))
+        return retcode
+
+    def setsid(self, exit_code=0):
+        retcode = self.context.sys_setsid(self.self_proc)
+        if (self.context.logging):
+            self.util_commit_log(str(self.self_proc.p)+" : setsid() : " +"retcode = "+str(retcode))
         return retcode
 
     def context_switch(self, sp):
@@ -98,6 +112,8 @@ if __name__ == '__main__':
     API.fork()
     API.context_switch(API.context.processes[1])
     API.fork()
+    API.util_ps()
+    API.setsid()
     API.util_ps()
     API.exit()
     API.util_ps()
