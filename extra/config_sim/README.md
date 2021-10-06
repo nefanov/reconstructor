@@ -12,3 +12,10 @@
 - Context switch
 - System log
 - Supported syscalls: fork, exit, setsid, setpgid
+
+
+***Dependencies***
+
+- Python 3 (Tested on 3.8)
+- Packages: more_itertools
+
