@@ -1,3 +1,6 @@
+import itertools
+import more_itertools as mit
+
 class SysContext:
     def __init__(self, processes=[], groups=[], sessions=[], init_pid=1, syslog=[], logging=True):
         self.processes = processes
@@ -7,11 +10,19 @@ class SysContext:
         self.init_pid = init_pid
         self.syslog = syslog
         self.logging = logging
+        self.self_proc = None
 
     def system_start(self):
         init = Process()
         self.processes.append(init)
         return
+
+    def sys_schedule(self, algo = lambda l: list(mit.random_permutation(l))[-1]):
+        # In modern Linux kernels, schedule mustn't be called from any user processes, so it is no schedule function in the API
+        # default algo: random scheduling
+        proc = algo(self.processes)
+        self.self_proc = proc
+        return proc
 
     def sys_fork(self, caller_proc):
         proc_pids = set(sorted(set([P.p for P in self.processes])))
@@ -100,34 +111,34 @@ class SysAPI:
         if fromstart:
             self.context.system_start()
         
-        self.self_proc = self.context.processes[0]
+        self.context.self_proc = self.context.processes[0]
 
     def fork(self):
-        retcode = self.context.sys_fork(self.self_proc)
+        retcode = self.context.sys_fork(self.context.self_proc)
         if (self.context.logging):
-            self.util_commit_log(str(self.self_proc.p)+" : fork() : "+"retcode = "+str(retcode))
+            self.util_commit_log(str(self.context.self_proc.p)+" : fork() : "+"retcode = "+str(retcode))
         return retcode
 
     def exit(self, exit_code=0):
-        retcode = self.context.sys_exit(self.self_proc)
+        retcode = self.context.sys_exit(self.context.self_proc)
         if (self.context.logging):
-            self.util_commit_log(str(self.self_proc.p)+" : exit("+str(exit_code)+") : "+"retcode = "+str(retcode))
+            self.util_commit_log(str(self.context.self_proc.p)+" : exit("+str(exit_code)+") : "+"retcode = "+str(retcode))
         return retcode
 
     def setsid(self):
-        retcode = self.context.sys_setsid(self.self_proc)
+        retcode = self.context.sys_setsid(self.context.self_proc)
         if (self.context.logging):
-            self.util_commit_log(str(self.self_proc.p)+" : setsid() : " +"retcode = "+str(retcode))
+            self.util_commit_log(str(self.context.self_proc.p)+" : setsid() : " +"retcode = "+str(retcode))
         return retcode
 
     def setpgid(self, pid=0, pgid=0):
-        retcode = self.context.sys_setpgid(self.self_proc, pid, pgid)
+        retcode = self.context.sys_setpgid(self.context.self_proc, pid, pgid)
         if (self.context.logging):
-            self.util_commit_log(str(self.self_proc.p)+" : setpgid("+str(pid)+", "+str(pgid)+") : " +"retcode = "+str(retcode))
+            self.util_commit_log(str(self.context.self_proc.p)+" : setpgid("+str(pid)+", "+str(pgid)+") : " +"retcode = "+str(retcode))
         return retcode
 
     def context_switch(self, sp):
-        self.self_proc = sp
+        self.context.self_proc = sp
 
     def util_enable_log(self):
         self.context.logging = True
@@ -178,3 +189,7 @@ if __name__ == '__main__':
     API.exit()
     API.util_ps()
     API.util_dump_log()
+
+    # scheduling example:
+    while (True):
+        print(API.context.sys_schedule().p)
