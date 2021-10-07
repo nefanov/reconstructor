@@ -13,6 +13,49 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+
+def checkpoint_full_tree_reload(API, proc_list):
+    API.context.processes = []
+    for proc in proc_list:
+        P = Process(p=int(proc[0]), g = int(proc[1]), s = int(proc[2]), pp = int(proc[3]))
+        if P.p == 1: # trick for relatively old kernels simulation
+            P.g = P.s = 1
+
+        API.context.processes.append(P)
+
+    API.context_switch([p for p in API.context.processes if p.p is 1][-1])
+    if API.context.logging == True: 
+        API.util_commit_log("CHKP: checkpoint_full_tree_reload")
+    return API
+
+
+def checkpoint_subtree_load(API, proc_list):
+    # rewrites old processes by new or append if not exist
+    # saves current process as scheduled
+    # also suitable for full pstree reload (but checkpoint_full_tree_load is recommended to use in this case)
+    # note: there is no check of pstree attributes consistency, so be careful with this function
+    for proc in proc_list:
+        P = Process(p=int(proc[0]), g = int(proc[1]), s = int(proc[2]), pp = int(proc[3]))
+        old_P = [p for p in API.context.processes if p.p is P.p]
+        if len(old_P)>0:
+            API.context.processes.remove(old_P[-1])
+
+        if P.p == 1: # trick for relatively old kernels simulation
+            P.g = P.s = 1
+
+        API.context.processes.append(P)
+        if API.context.logging == True: 
+            API.util_commit_log("CHKP: checkpoint_subtree_load")
+
+    return API
+
+
+
+
+def checkpoint_dump(API):
+    pass
+
+
 def perform_syscall(API, callname, argv=[]):
     if callname == 'fork':
         return API.fork() 
@@ -46,4 +89,7 @@ if __name__ == '__main__':
     interpret(API)
     g = make_pstree(API.context.processes)
     render_pstree(g, "1.png")
-    print(get_current_host_ps())
+    print()
+
+    checkpoint_full_tree_reload(API, get_current_host_ps())
+    API.util_ps()
