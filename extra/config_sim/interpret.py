@@ -1,4 +1,5 @@
 from simulator import *
+from pstree_struct import *
 
 class bcolors:
     HEADER = '\033[95m'
@@ -42,4 +43,5 @@ def interpret(API, cmd_list=[
 if __name__ == '__main__':
     API=SysAPI()
     interpret(API)
-    
+    g = make_pstree(API.context.processes)
+    render_pstree(g, "1.png")
