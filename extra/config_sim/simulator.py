@@ -83,10 +83,12 @@ class SysContext:
             else:
                 return -1
  
-        proc = [item for item in self.processes if item.p == pid][0]
+        proc = [item for item in self.processes if item.p == pid]
         if len(proc) == 0:
             # no such process
             return -1
+
+        proc = proc[0]
 
         if proc.s == proc.p == proc.g:
             # process is a session leader (check it on the new linux kernels--may be redundant?)
@@ -165,8 +167,6 @@ class SysAPI:
         print("------------------------------")
 
         
-
-
 class Process:
     def __init__(self, p=1, g=1, s=1, pp=0):
         self.p = p
@@ -193,3 +193,4 @@ if __name__ == '__main__':
     # scheduling example:
     while (True):
         print(API.context.sys_schedule().p)
+        
