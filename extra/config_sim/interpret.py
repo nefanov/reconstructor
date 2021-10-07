@@ -85,11 +85,11 @@ def interpret(API, cmd_list=[
                  
 
 if __name__ == '__main__':
-    API=SysAPI()
+    API = SysAPI()
+
     interpret(API)
-    g = make_pstree(API.context.processes)
-    render_pstree(g, "1.png")
-    print()
 
     checkpoint_full_tree_reload(API, get_current_host_ps())
+    g = make_pstree(API.context.processes)
+    render_pstree(g, "1.png")
     API.util_ps()
