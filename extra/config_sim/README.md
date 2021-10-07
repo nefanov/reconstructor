@@ -17,7 +17,8 @@
 ***Dependencies***
 
 - Python 3 (Tested on 3.8)
-- Packages: more_itertools
+- GraphViz
+- Packages: more_itertools, pydot
 
 
 ***HOW TO***
