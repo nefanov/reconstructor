@@ -1,4 +1,5 @@
 import pydot
+import csv
 
 def make_pstree(pslist=[]):
     graph = pydot.Dot()
@@ -11,3 +12,11 @@ def make_pstree(pslist=[]):
 
 def render_pstree(graph, fn="1.png"):
     graph.write_png(fn)
+
+
+def load_ps(fn="1.txt"):
+    #p g s pp name
+    with open(fn) as fp:
+        reader = csv.reader(fp, delimiter=" ", quotechar='"')
+        next(reader, None)  # skip the headers 
+        return [list(filter(('').__ne__, dr)) for dr in [row for row in reader]]
