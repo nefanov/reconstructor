@@ -19,3 +19,7 @@
 - Python 3 (Tested on 3.8)
 - Packages: more_itertools
 
+
+***HOW TO***
+
+run *python3 runsim.py* command from terminal for start simulation example or make *import runsim* into your simulation script for API usage 
