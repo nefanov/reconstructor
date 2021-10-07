@@ -1,3 +1,4 @@
+import sys
 from simulator import *
 from pstree_struct import *
 
@@ -45,3 +46,4 @@ if __name__ == '__main__':
     interpret(API)
     g = make_pstree(API.context.processes)
     render_pstree(g, "1.png")
+    print(get_current_host_ps())
