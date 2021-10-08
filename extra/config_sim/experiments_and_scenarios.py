@@ -14,10 +14,11 @@ def load_strace(inp):
         pass
 
 
-def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid']):
+def subtree_activity()
+
+def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=False):
     for i in range(steps):
         self_ = API.context.sys_schedule()
-        print(self_.p)
         syscall = random.choice(sc_list)
         if syscall == 'setpgid':
             first = random.choice([P.p for P in API.context.processes])
@@ -26,16 +27,21 @@ def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgi
         else:
             if syscall == "exit":
                 if self_.p == 1:
-                    break
+                    if verbose:
+                        print("Force omit for init to exit")
+                    continue
+
             ret = perform_syscall(API, syscall, [0])
 
         if ret is None or ret < 0:
                 print(bcolors.WARNING+"Interpretation warning on:"+bcolors. ENDC,str(i), "command:", syscall, "PID", str(self_.p),":", ret)
-        API.util_ps()
+    API.util_ps()
 
     API.util_dump_log()
 
 
 if __name__ == '__main__':
-    API = SysAPI()
-    random_syscalls(API=API, steps=100000)
+    for i in range(1):
+        API = SysAPI()
+        random_syscalls(API=API, steps=100)
+        del API
