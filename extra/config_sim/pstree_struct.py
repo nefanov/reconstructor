@@ -7,7 +7,7 @@ from subprocess import PIPE, run
 def make_pstree(pslist=[]):
     graph = pydot.Dot()
     for i, p in enumerate(pslist):
-        graph.add_node(pydot.Node(str(p.p), label=str(p.p)+" "+str(p.g)+" "+str(p.s)+" "+str(p.pp)))
+        graph.add_node(pydot.Node(str(p.p), label=str(p.p)+" "+str(p.g)+" "+str(p.s)+" "+str(p.pp), p=p.p, g=p.g, s=p.s, pp=p.pp))
         if (p.pp != 0):
             graph.add_edge(pydot.Edge(src=str(p.pp),dst=str(p.p)))
 
@@ -33,3 +33,4 @@ def get_current_host_ps():
 def load_ps_from_fs(fn="1.txt"):
     #p g s pp name
     return load_ps(open(fn))
+   
