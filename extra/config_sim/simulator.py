@@ -166,6 +166,27 @@ class SysAPI:
             print(q)
         print("------------------------------")
 
+    def extra_return_synced_ps(self, verbose=False):
+        query = [{
+            'p':{'value':P.p,'sync':False}, 
+            'g':{'value':P.g,'sync':False},
+            's':{'value':P.s,'sync':False},
+            'pp':{'value':P.pp,'sync':False},
+        } for P in self.context.processes]
+        if verbose:
+            print(query)
+        plist = [P.p for P in self.context.processes]
+        return query, plist
+
+    def extra_make_upload_from_synced(self, query, save_previous=False):
+        if not save_previous:
+            self.context.processes = []
+        for q in query:
+            item = q
+           
+            P = Process(p=q['p']['value'],g=q['g']['value'],s=q['s']['value'],pp=q['pp']['value'])
+            self.context.processes.append(P)
+
         
 class Process:
     def __init__(self, p=1, g=1, s=1, pp=0):
