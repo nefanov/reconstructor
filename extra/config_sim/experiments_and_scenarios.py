@@ -41,6 +41,9 @@ def load_strace(inp):
 
 def pydot_tree_to_structured_full_repr(T):
     nodes = T.get_nodes()
+    for e in T.get_edges():
+        e.set_label("z")
+
     for n in nodes:
         #p = n.get_attributes("p")
         g = n.get_attributes()["g"]
@@ -137,6 +140,7 @@ def isomorphism_check(G1, G2, checker="WL_node"):
     if checker == "DEFAULT":
         res = nx.is_isomorphic(G1, G2)
     elif checker.startswith( "WL" ):
+
         r1 = graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label') if checker.endswith("node") else  graph_hashing.weisfeiler_lehman_graph_hash(G1, edge_attr='label')
         r2 = graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label') if checker.endswith("node") else  graph_hashing.weisfeiler_lehman_graph_hash(G2, edge_attr='label')
         res = math.fabs(int(r1,16) - int(r2,16))
@@ -217,6 +221,7 @@ if __name__ == '__main__':
             if sys.argv[1].startswith("-augm_isom"):
                 G1 = pydot_tree_to_structured_full_repr(initial)
                 G2 = pydot_tree_to_structured_full_repr(t)
+                
                 checker = "WL_edge"
             results.append((isomorphism_check(nx.nx_pydot.from_pydot(G1), nx.nx_pydot.from_pydot(G2), checker=checker), initial, t))
 
