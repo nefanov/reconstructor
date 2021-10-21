@@ -107,7 +107,7 @@ def isomorphism_check(G1, G2, checker="WL"):
     if checker == "DEFAULT":
         res = nx.is_isomorphic(G1, G2)
     elif checker == "WL":
-        res = math.fabs(int(graph_hashing.weisfeiler_lehman_graph_hash(G1),16) - int(graph_hashing.weisfeiler_lehman_graph_hash(G2),16))
+        res = math.fabs(int(graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label'),16) - int(graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label'),16))
     else:
         #add your custom procedure
         res = False
@@ -175,7 +175,7 @@ if __name__ == '__main__':
             shift = True
         else:
             shift = False
-        bank = make_permutations(API,iters=1000, shift=shift, verbose=True)
+        bank = make_permutations(API,iters=10, shift=shift, verbose=True)
         initial = bank[0]
         results = []
         for t in bank[1:]:
