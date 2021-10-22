@@ -114,7 +114,16 @@ def pstree_to_structured_full_repr(pslist=[]):
         
     return T
 
-def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=False):
+def write_ps_to_file(API, fn):
+    f = open(fn, 'w')
+    f.write("PID\tPGID\tSID\tPPID\n")
+    query = [str(P.p)+"\t"+str(P.g)+"\t"+str(P.s)+"\t"+str(P.pp)+"\n" for P in API.context.processes]
+    for q in query:
+       f.write(q)
+    f.close()        
+
+
+def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=False, exp_name="synthetic", loc_fn="0"):
     for i in range(steps):
         self_ = API.context.sys_schedule()
         syscall = random.choice(sc_list)
@@ -136,6 +145,9 @@ def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgi
     API.util_ps()
 
     API.util_dump_log()
+
+    if verbose:
+        write_ps_to_file(API, exp_name + os.sep+"ps"+loc_fn+".ps")
 
 
 def rand_sysc_test(loops = 1, steps = 100):
@@ -230,7 +242,7 @@ def isom_check(infile=None):
         if not infile:
             checkpoint_full_tree_reload(API, get_current_host_ps())
         else:
-            checkpoint_full_tree_reload(API, load_ps_from_fs(fn=infile))
+            checkpoint_full_tree_reload(API, load_ps_from_fs(fn=infile,delimiter="\t"))
         if sys.argv[1].endswith("shift_val"):
             shift = True
         else:
@@ -267,4 +279,21 @@ def isom_check(infile=None):
 
 
 if __name__ == '__main__':
-    isom_check(infile=None)
+    if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
+        isom_check(infile=None)
+    elif len(sys.argv)>2 and (sys.argv[1].startswith("-gen")):
+        API = SysAPI()
+        random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=True, exp_name="synthetic", loc_fn=sys.argv[2])
+    elif len(sys.argv)>=2 and (sys.argv[1].startswith("-vis")):
+        from os import walk
+        f = []
+        for (dirpath, dirnames, filenames) in walk("./synthetic"):
+            f.extend(filenames)
+            break
+        for i, fn in enumerate(f):
+            data = load_ps_from_fs("./synthetic/"+fn, delimiter="\t")
+            print(data)
+            API = SysAPI()
+            checkpoint_full_tree_reload(API, data)
+            G=make_pstree(pslist=API.context.processes)
+            render_pstree(G, "output" + os.sep + str(i)+".png")
