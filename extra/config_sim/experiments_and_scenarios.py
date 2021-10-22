@@ -223,11 +223,14 @@ def make_permutations(API, iters=100, shift=False, verbose=False, exp_name="plot
     return pydot_obj_trees_list
 
 
-if __name__ == '__main__':
+def isom_check(infile=None):
     exp_name="plots"
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
         API = SysAPI()
-        checkpoint_full_tree_reload(API, get_current_host_ps())
+        if not infile:
+            checkpoint_full_tree_reload(API, get_current_host_ps())
+        else:
+            checkpoint_full_tree_reload(API, load_ps_from_fs(fn=infile))
         if sys.argv[1].endswith("shift_val"):
             shift = True
         else:
@@ -261,3 +264,7 @@ if __name__ == '__main__':
         psl = get_current_host_ps()
         Tstar = pstree_to_structured_full_repr(pslist=psl)
         render_pstree(Tstar, "1.png")
+
+
+if __name__ == '__main__':
+    isom_check(infile=None)
