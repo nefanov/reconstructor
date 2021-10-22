@@ -39,10 +39,17 @@ def load_strace(inp):
         pass
 
 
+def edge_check(T, src, dst, label, method="appprox"):
+    if method=="accurate":
+        for e in T.get_edges():
+            if e.get_source() == src and e.get_destination() == dst and e.get_attributes['label'] == label:
+                return True
+    
+    return False
+
+
 def pydot_tree_to_structured_full_repr(T):
     nodes = T.get_nodes()
-    for e in T.get_edges():
-        e.set_label("z")
 
     for n in nodes:
         #p = n.get_attributes("p")
@@ -50,7 +57,7 @@ def pydot_tree_to_structured_full_repr(T):
         s = n.get_attributes()["s"]
         pp = n.get_attributes()["pp"]
         lg = [P for P in nodes if P.get_attributes()["g"]==P.get_attributes()["p"]==g]
-        if (len(lg)>0): # process-group-leader is in pstree
+        if not edge_check(T,lg[0], n, label="group"): # process-group-leader is in pstree
            T.add_edge(pydot.Edge(lg[0], n, label="group",color="lightcoral"))
         elif  len([P for P in nodes if P.get_attributes()["p"]==g])>1: # process-group-leader is in not pstree, but there is a process with such pid
             lg = ([P for P in nodes if P.get_attributes()["p"]==g])[0]
@@ -60,15 +67,17 @@ def pydot_tree_to_structured_full_repr(T):
 
         else: # no such processes
             imn = pydot.Node(s=s,p=g,g=g,pp=-1, label=str(g)+" "+str(g)+" "+str(s)+" "+str(-1))
-            T.add_edge(imn, n, label="g_leader_imn")
+            
             
         ls = [P for P in nodes if P.get_attributes()["s"]==P.get_attributes()["p"]==s]
         if (len(ls)>0): # process-session-leader is in pstree
-            T.add_edge(pydot.Edge(ls[0], n, label="session",color="gold"))
+            if not edge_check(T,ls[0], n, label="session"):
+                T.add_edge(pydot.Edge(ls[0], n, label="session",color="lightblue"))
         else: # no such processes
             imn = pydot.Node(s=s,p=s,g=s,pp=-1, label=str(s)+" "+str(s)+" "+str(s)+" "+str(-1))
-            T.add_edge(imn, n, label="s_leader_imn")
-        
+            if not edge_check(T,imn, n, label="s_leader_imn"):
+                T.add_edge(imn, n, label="s_leader_imn")
+
     return T
 
 
@@ -139,11 +148,21 @@ def rand_sysc_test(loops = 1, steps = 100):
 def isomorphism_check(G1, G2, checker="WL_node"):
     if checker == "DEFAULT":
         res = nx.is_isomorphic(G1, G2)
-    elif checker.startswith( "WL" ):
 
-        r1 = graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label') if checker.endswith("node") else  graph_hashing.weisfeiler_lehman_graph_hash(G1, edge_attr='label')
-        r2 = graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label') if checker.endswith("node") else  graph_hashing.weisfeiler_lehman_graph_hash(G2, edge_attr='label')
+    elif checker.startswith( "WL" ):
+        attrs= nx.get_edge_attributes(G1, 'label')
+        attr_list = [v for _,v in attrs.items()]
+        nx.set_edge_attributes(G1, attr_list, 'label')
+        attrs= nx.get_edge_attributes(G2, 'label')
+        attr_list = [v for _, v in attrs.items()]
+        nx.set_edge_attributes(G2, attr_list, 'label')
+
+        r1 = graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label') if checker.endswith("node") \
+                        else  graph_hashing.weisfeiler_lehman_graph_hash(G1)
+        r2 = graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label') if checker.endswith("node") \
+                        else  graph_hashing.weisfeiler_lehman_graph_hash(G2)
         res = math.fabs(int(r1,16) - int(r2,16))
+        
     else:
         #add your custom procedure
         res = False
@@ -196,14 +215,16 @@ def make_permutations(API, iters=100, shift=False, verbose=False, exp_name="plot
             pydot_obj_trees_list.append(T)
             if not os.path.exists(exp_name):
                 os.makedirs(exp_name)
-            render_pstree(T, exp_name+os.sep+ (str)(i)+"_.png")
+            render_pstree(T, exp_name + os.sep + (str)(i) + "_.png")
+            T.write_raw('output_raw.dot')
 
-        printProgressBar(i + 1, iters, prefix = 'Progress:', suffix = 'Complete', length = iters)
+        printProgressBar(i + 1, iters, prefix = 'Progress:', suffix = 'Complete', length = 100)
         permute_ps(API, allow_shifts=shift)
     return pydot_obj_trees_list
 
 
 if __name__ == '__main__':
+    exp_name="plots"
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
         API = SysAPI()
         checkpoint_full_tree_reload(API, get_current_host_ps())
@@ -211,21 +232,28 @@ if __name__ == '__main__':
             shift = True
         else:
             shift = False
-        bank = make_permutations(API,iters=10, shift=shift, verbose=True)
+        bank = make_permutations(API,iters=100, shift=shift, verbose=True)
         initial = bank[0]
+        G1 = pydot_tree_to_structured_full_repr(initial)
+
+        print("----------------------------------------------------------------------------------------------------------------\nHashes calculation & comparing...")
         results = []
-        for t in bank[1:]:
-            G1 = initial
+        for i,t in enumerate(bank[1:]):
+            printProgressBar(i + 1, len(bank)-1, prefix = 'Progress:', suffix = 'Complete', length = 100)
             G2 = t
             checker = "WL_node"
             if sys.argv[1].startswith("-augm_isom"):
-                G1 = pydot_tree_to_structured_full_repr(initial)
-                G2 = pydot_tree_to_structured_full_repr(t)
                 
+                G2 = pydot_tree_to_structured_full_repr(t)
+                G1.write_png(exp_name + "/temp" + str(i)+"orig.png")
+                G2.write_png(exp_name + "/temp" + str(i)+"t.png")
                 checker = "WL_edge"
             results.append((isomorphism_check(nx.nx_pydot.from_pydot(G1), nx.nx_pydot.from_pydot(G2), checker=checker), initial, t))
-
-        print("\nResults:\n")
+        lst = [r[0][0] for r in results]
+        nze = [idx for idx, val in enumerate(lst) if val != 0]
+        print(str(len(nze)/len(lst)*100)+" % is strictly non-isomorfic", ": "+str(nze) + " -- indexes" if len(nze)>0 else "")
+        print("----------------------------------------------------------------------------------------------------------------")
+        print("Results:\n")
         pprint.pprint(
         [(i,r[0]) for i,r in enumerate(results)]
         )
