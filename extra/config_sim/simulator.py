@@ -165,6 +165,12 @@ class SysAPI:
         for q in query:
             print(q)
         print("------------------------------")
+        
+    def extra_util_get_session_processes(self, s):
+        return [P for P in self.context.processes if P.s == s]
+
+    def extra_util_get_pgroup_processes(self, g):
+        return [P for P in self.context.processes if P.g == g]
 
     def extra_return_synced_ps(self, verbose=False):
         query = [{
