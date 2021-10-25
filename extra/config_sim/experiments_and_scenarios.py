@@ -123,13 +123,27 @@ def write_ps_to_file(API, fn):
     f.close()        
 
 
-def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=False, exp_name="synthetic", loc_fn="0"):
+def random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=False, exp_name="synthetic", loc_fn="0", preset="N/A"):
     for i in range(steps):
         self_ = API.context.sys_schedule()
         syscall = random.choice(sc_list)
         if syscall == 'setpgid':
-            first = random.choice([P.p for P in API.context.processes])
-            second = random.choice([P.g for P in API.context.processes])
+            if preset:
+                if "simple" in preset:
+                    first = 0
+                elif "accurate" in preset:
+                    first = random.choice([P.p for P in API.extra_util_get_session_processes(self_.s)])
+                else:
+                    first = random.choice([P.p for P in API.context.processes])
+
+            if preset:
+                if "simple" in preset:
+                    second = random.choice([P.g for P in API.extra_util_get_session_processes(self_.s)])
+                elif "accurate" in preset:
+                    second = random.choice([P.g for P in API.extra_util_get_session_processes(self_.s)])
+
+                else:
+                    second = random.choice([P.g for P in API.context.processes])
             ret = perform_syscall(API, syscall, [first,second])
         else:
             if syscall == "exit":
@@ -279,19 +293,22 @@ def isom_check(infile=None):
 
 
 if __name__ == '__main__':
+    exp_name = "simple"
+    gen_syscalls_list = ['fork', 'setsid', 'setpgid']
+    steps = 300
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
         isom_check(infile=None)
     elif len(sys.argv)>2 and (sys.argv[1].startswith("-gen")):
         API = SysAPI()
-        random_syscalls(API, steps=10000, sc_list=['fork', 'exit', 'setsid', 'setpgid'], verbose=True, exp_name="synthetic", loc_fn=sys.argv[2])
+        random_syscalls(API, steps=steps, sc_list=gen_syscalls_list, verbose=True, exp_name=exp_name, loc_fn=sys.argv[2], preset="accurate")
     elif len(sys.argv)>=2 and (sys.argv[1].startswith("-vis")):
         from os import walk
         f = []
-        for (dirpath, dirnames, filenames) in walk("./synthetic"):
+        for (dirpath, dirnames, filenames) in walk("./"+exp_name):
             f.extend(filenames)
             break
         for i, fn in enumerate(f):
-            data = load_ps_from_fs("./synthetic/"+fn, delimiter="\t")
+            data = load_ps_from_fs("./"+exp_name +"/"+fn, delimiter="\t")
             print(data)
             API = SysAPI()
             checkpoint_full_tree_reload(API, data)
