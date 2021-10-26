@@ -293,14 +293,24 @@ def isom_check(infile=None):
 
 
 if __name__ == '__main__':
-    exp_name = "simple"
-    gen_syscalls_list = ['fork', 'setsid', 'setpgid']
-    steps = 300
+    exp_name = "context_range"
+    gen_syscalls_list = ['fork', 'setsid', 'setpgid','exit']
+    
+    steps = 12000
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
         isom_check(infile=None)
     elif len(sys.argv)>2 and (sys.argv[1].startswith("-gen")):
         API = SysAPI()
+        if (len(sys.argv)>3):
+            steps = int(sys.argv[3])
+            exp_name += os.sep + sys.argv[3]
+            if not os.path.exists(exp_name):
+                os.mkdir(exp_name)
+
+            
+
         random_syscalls(API, steps=steps, sc_list=gen_syscalls_list, verbose=True, exp_name=exp_name, loc_fn=sys.argv[2], preset="accurate")
+
     elif len(sys.argv)>=2 and (sys.argv[1].startswith("-vis")):
         from os import walk
         f = []
@@ -309,7 +319,6 @@ if __name__ == '__main__':
             break
         for i, fn in enumerate(f):
             data = load_ps_from_fs("./"+exp_name +"/"+fn, delimiter="\t")
-            print(data)
             API = SysAPI()
             checkpoint_full_tree_reload(API, data)
             G=make_pstree(pslist=API.context.processes)
