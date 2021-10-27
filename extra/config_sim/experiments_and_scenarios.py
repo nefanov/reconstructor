@@ -3,8 +3,9 @@ import numpy as np
 import pprint
 import random
 import math
+import networkx as nx
 from simulator import *
-from processing import *
+from interpret import *
 import networkx.algorithms.graph_hashing as graph_hashing
 
 # Print iterations progress
@@ -57,13 +58,13 @@ def pydot_tree_to_structured_full_repr(T):
         s = n.get_attributes()["s"]
         pp = n.get_attributes()["pp"]
         lg = [P for P in nodes if P.get_attributes()["g"]==P.get_attributes()["p"]==g]
-        if not edge_check(T,lg[0], n, label="group"): # process-group-leader is in pstree
+        if len(lg)>0 and not edge_check(T,lg[0], n, label="group"): # process-group-leader is in pstree
            T.add_edge(pydot.Edge(lg[0], n, label="group",color="lightcoral"))
         elif  len([P for P in nodes if P.get_attributes()["p"]==g])>1: # process-group-leader is in not pstree, but there is a process with such pid
             lg = ([P for P in nodes if P.get_attributes()["p"]==g])[0]
             imn = pydot.Node(s=s,p=lg[0],g=g,pp=-1, label=str(s)+" "+str(s)+" "+str(s)+" "+str(lg[0].get_attrubutes()["pp"]))
-            T.add_edge(imn, lg[0], label="g_leader_deset")
-            T.add_edge(lg[0], n, label="g_leader_imn")
+            T.add_edge(pydot.Edge(imn, lg[0], label="g_leader_deset"))
+            T.add_edge(pydot.Edge(lg[0], n, label="g_leader_imn"))
 
         else: # no such processes
             imn = pydot.Node(s=s,p=g,g=g,pp=-1, label=str(g)+" "+str(g)+" "+str(s)+" "+str(-1))
@@ -76,8 +77,7 @@ def pydot_tree_to_structured_full_repr(T):
         else: # no such processes
             imn = pydot.Node(s=s,p=s,g=s,pp=-1, label=str(s)+" "+str(s)+" "+str(s)+" "+str(-1))
             if not edge_check(T,imn, n, label="s_leader_imn"):
-                T.add_edge(imn, n, label="s_leader_imn")
-
+                T.add_edge(pydot.Edge(imn, n, label="s_leader_imn"))
     return T
 
 
@@ -171,7 +171,7 @@ def rand_sysc_test(loops = 1, steps = 100):
         del API
 
     
-def isomorphism_check(G1, G2, checker="WL_node"):
+def isomorphism_check(G1, G2, checker="WL_node", iterations=3):
     if checker == "DEFAULT":
         res = nx.is_isomorphic(G1, G2)
 
@@ -183,10 +183,10 @@ def isomorphism_check(G1, G2, checker="WL_node"):
         attr_list = [v for _, v in attrs.items()]
         nx.set_edge_attributes(G2, attr_list, 'label')
 
-        r1 = graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label') if checker.endswith("node") \
-                        else  graph_hashing.weisfeiler_lehman_graph_hash(G1)
-        r2 = graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label') if checker.endswith("node") \
-                        else  graph_hashing.weisfeiler_lehman_graph_hash(G2)
+        r1 = graph_hashing.weisfeiler_lehman_graph_hash(G1, node_attr='label', iterations=iterations) if checker.endswith("node") \
+                        else  graph_hashing.weisfeiler_lehman_graph_hash(G1, iterations=iterations)
+        r2 = graph_hashing.weisfeiler_lehman_graph_hash(G2, node_attr='label', iterations=iterations) if checker.endswith("node") \
+                        else  graph_hashing.weisfeiler_lehman_graph_hash(G2, iterations=iterations)
         res = math.fabs(int(r1,16) - int(r2,16))
         
     else:
@@ -249,7 +249,7 @@ def make_permutations(API, iters=100, shift=False, verbose=False, exp_name="plot
     return pydot_obj_trees_list
 
 
-def isom_check(infile=None):
+def isom_check(infile=None, iterations=3):
     exp_name="plots"
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
         API = SysAPI()
@@ -261,7 +261,7 @@ def isom_check(infile=None):
             shift = True
         else:
             shift = False
-        bank = make_permutations(API,iters=100, shift=shift, verbose=True)
+        bank = make_permutations(API,iters=20, shift=shift, verbose=True)
         initial = bank[0]
         G1 = pydot_tree_to_structured_full_repr(initial)
 
@@ -274,12 +274,19 @@ def isom_check(infile=None):
             if sys.argv[1].startswith("-augm_isom"):
                 
                 G2 = pydot_tree_to_structured_full_repr(t)
-                G1.write_png(exp_name + "/temp" + str(i)+"orig.png")
-                G2.write_png(exp_name + "/temp" + str(i)+"t.png")
+                try:
+                    G1.write_png(exp_name + "/temp" + str(i)+"orig.png")
+                    G2.write_png(exp_name + "/temp" + str(i)+"t.png")
+                except:
+                    pass
                 checker = "WL_edge"
-            results.append((isomorphism_check(nx.nx_pydot.from_pydot(G1), nx.nx_pydot.from_pydot(G2), checker=checker), initial, t))
+            results.append((isomorphism_check(nx.nx_pydot.from_pydot(G1), nx.nx_pydot.from_pydot(G2),
+             checker=checker, iterations=iterations), initial, t))
+
         lst = [r[0][0] for r in results]
         nze = [idx for idx, val in enumerate(lst) if val != 0]
+        print("Results:")
+        print(results)
         print(str(len(nze)/len(lst)*100)+" % is strictly non-isomorfic", ": "+str(nze) + " -- indexes" if len(nze)>0 else "")
         print("----------------------------------------------------------------------------------------------------------------")
         print("Results:\n")
@@ -293,12 +300,12 @@ def isom_check(infile=None):
 
 
 if __name__ == '__main__':
-    exp_name = "context_range"
+    exp_name = "context"
     gen_syscalls_list = ['fork', 'setsid', 'setpgid','exit']
     
     steps = 12000
     if len(sys.argv)>=2 and (sys.argv[1].startswith("-isom") or sys.argv[1].startswith("-augm_isom")):
-        isom_check(infile=None)
+        isom_check(infile="context/ps5133.ps", iterations=0)
     elif len(sys.argv)>2 and (sys.argv[1].startswith("-gen")):
         API = SysAPI()
         if (len(sys.argv)>3):
@@ -306,8 +313,7 @@ if __name__ == '__main__':
             exp_name += os.sep + sys.argv[3]
             if not os.path.exists(exp_name):
                 os.mkdir(exp_name)
-
-            
+    
 
         random_syscalls(API, steps=steps, sc_list=gen_syscalls_list, verbose=True, exp_name=exp_name, loc_fn=sys.argv[2], preset="accurate")
 
@@ -323,3 +329,7 @@ if __name__ == '__main__':
             checkpoint_full_tree_reload(API, data)
             G=make_pstree(pslist=API.context.processes)
             render_pstree(G, "output" + os.sep + str(i)+".png")
+
+    elif len(sys.argv)>=2 and (sys.argv[1].startswith("-wl_par_algo_test")):
+         isom_check(infile=None)
+
